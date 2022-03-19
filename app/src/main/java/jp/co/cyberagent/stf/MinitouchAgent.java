@@ -132,7 +132,8 @@ public class MinitouchAgent extends Thread {
             p.lastMouseDown = now;
         }
         MotionEvent.PointerCoords coords = pointerCoords[idx];
-        int rotation = windowManager.getRotation();
+//        int rotation = windowManager.getRotation();
+        int rotation = 0;
         double rad = Math.toRadians(rotation * 90.0);
         coords.x = (float)(p.lastX * Math.cos(-rad) - p.lastY * Math.sin(-rad));
         coords.y = (rotation * width)+(float)(p.lastX * Math.sin(-rad) + p.lastY * Math.cos(-rad));
@@ -185,11 +186,11 @@ public class MinitouchAgent extends Thread {
      */
     private void manageClientConnection() {
         while (true) {
-            Log.i(TAG, String.format("Listening on %s", SOCKET));
+            System.out.println(String.format("Listening on %s", SOCKET));
             LocalSocket clientSocket;
             try {
                 clientSocket = serverSocket.accept();
-                Log.d(TAG, "client connected");
+                System.out.println(String.format("client connected, clientSocket = %s", clientSocket));
                 sendBanner(clientSocket);
                 processCommandLoop(clientSocket);
             } catch (IOException e) {
@@ -211,12 +212,14 @@ public class MinitouchAgent extends Thread {
             String cmd;
             int count = 0;
             while ((cmd = in.readLine()) != null) {
+                System.out.println(String.format("processCommandLoop, cmd = %s", cmd));
                 try (Scanner scanner = new Scanner(cmd)) {
                     scanner.useDelimiter(" ");
                     String type = scanner.next();
                     int contact;
                     switch (type) {
                         case "c":
+                            System.out.println(String.format("processCommandLoop, c, count = %s", count));
                             if (count == 1) {
                                 injectEvent(getMotionEvent(events[0]));
                             } else if (count == 2) {

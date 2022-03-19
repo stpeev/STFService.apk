@@ -25,6 +25,7 @@ public class InputManagerWrapper {
     }
 
     public boolean injectInputEvent(InputEvent event) {
+        System.out.println(String.format("injectInputEvent, event = %s", event));
         return eventInjector.injectInputEvent(event);
     }
 

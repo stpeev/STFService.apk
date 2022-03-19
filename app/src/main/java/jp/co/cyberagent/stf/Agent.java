@@ -60,8 +60,10 @@ public class Agent extends Thread {
          * As a workaround, minitouch will forward events to this
          * agent which will be able to use the Android InputManager
          */
-        System.out.println("Starting minitouch agent");
         Point size = MinitouchAgent.getScreenSize();
+
+        System.out.println(String.format("Starting minitouch agent, screenSize = %s", size));
+
         MinitouchAgent m = new MinitouchAgent(size.x, size.y, handler);
         m.start();
 
