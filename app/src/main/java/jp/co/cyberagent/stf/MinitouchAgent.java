@@ -23,7 +23,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Display;
 import android.view.InputDevice;
@@ -45,7 +44,6 @@ import jp.co.cyberagent.stf.compat.InputManagerWrapper;
 import jp.co.cyberagent.stf.compat.WindowManagerWrapper;
 import jp.co.cyberagent.stf.util.InternalApi;
 
-@RequiresApi(api = Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class MinitouchAgent extends Thread {
     private static final String TAG = MinitouchAgent.class.getSimpleName();
     private static final String SOCKET = "minitouchagent";
@@ -122,6 +120,21 @@ public class MinitouchAgent extends Thread {
         handler.post(() -> inputManager.injectInputEvent(event));
     }
 
+    private float[] calculateCoordsForScreen(PointerEvent p){
+        float[] result = new float[2];
+        int x_translate=0, y_translate=0;
+        int rotation = windowManager.getRotation();
+        if (rotation == 1){
+            y_translate = width;
+        } else if (rotation == 3){
+            x_translate = height;
+        }
+        double rad = Math.toRadians(rotation*-90);
+        result[0] = (float)(p.lastX * Math.cos(rad) - p.lastY * Math.sin(rad))+x_translate;
+        result[1] = (float)(p.lastX * Math.sin(rad) + p.lastY * Math.cos(rad))+y_translate;
+        return result;
+    }
+
     private MotionEvent getMotionEvent(PointerEvent p) {
         return getMotionEvent(p,0);
     }
@@ -132,11 +145,10 @@ public class MinitouchAgent extends Thread {
             p.lastMouseDown = now;
         }
         MotionEvent.PointerCoords coords = pointerCoords[idx];
-//        int rotation = windowManager.getRotation();
-        int rotation = 0;
-        double rad = Math.toRadians(rotation * 90.0);
-        coords.x = (float)(p.lastX * Math.cos(-rad) - p.lastY * Math.sin(-rad));
-        coords.y = (rotation * width)+(float)(p.lastX * Math.sin(-rad) + p.lastY * Math.cos(-rad));
+
+        float[] screenCoords = calculateCoordsForScreen(p);
+        coords.x = screenCoords[0];
+        coords.y = screenCoords[1];
         return MotionEvent.obtain(p.lastMouseDown, now, p.action, idx+1, pointerProperties,
             pointerCoords, 0, 0, 1f, 1f, 0, 0,
             InputDevice.SOURCE_TOUCHSCREEN, 0);
@@ -151,14 +163,15 @@ public class MinitouchAgent extends Thread {
         } else {
             MotionEvent.PointerCoords coords1 = pointerCoords[0];
             MotionEvent.PointerCoords coords2 = pointerCoords[1];
-            int rotation = windowManager.getRotation();
-            double rad = Math.toRadians(rotation * 90.0);
 
-            coords1.x = (float) (p1.lastX * Math.cos(-rad) - p1.lastY * Math.sin(-rad));
-            coords1.y = (rotation * width) + (float) (p1.lastX * Math.sin(-rad) + p1.lastY * Math.cos(-rad));
+            float[] screenCoords1 = calculateCoordsForScreen(p1);
+            float[] screenCoords2 = calculateCoordsForScreen(p2);
 
-            coords2.x = (float) (p2.lastX * Math.cos(-rad) - p2.lastY * Math.sin(-rad));
-            coords2.y = (rotation * width) + (float) (p2.lastX * Math.sin(-rad) + p2.lastY * Math.cos(-rad));
+            coords1.x = screenCoords1[0];
+            coords1.y = screenCoords1[1];;
+
+            coords2.x = screenCoords2[0];
+            coords2.y = screenCoords2[1];
 
             MotionEvent event = MotionEvent.obtain(p1.lastMouseDown, now, p1.action, 2, pointerProperties,
                 pointerCoords, 0, 0, 1f, 1f, 0, 0,
