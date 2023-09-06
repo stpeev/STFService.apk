@@ -1,14 +1,17 @@
 package jp.co.cyberagent.stf.compat;
 
+import android.util.Log;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import jp.co.cyberagent.stf.MinitouchAgent;
 import jp.co.cyberagent.stf.util.InternalApi;
 
 public class InputManagerWrapper {
+    private static final String TAG = InputManagerWrapper.class.getSimpleName();
     private EventInjector eventInjector;
 
     public InputManagerWrapper() {
@@ -21,6 +24,8 @@ public class InputManagerWrapper {
                 eventInjector = new WindowManagerEventInjector();
             }
         }
+
+        System.out.println(String.format("%s, underlying event injector is %s", TAG, eventInjector));
     }
 
     public boolean injectKeyEvent(KeyEvent event) {

@@ -120,18 +120,29 @@ public class MinitouchAgent extends Thread {
         handler.post(() -> inputManager.injectInputEvent(event));
     }
 
+    // On Pixel 6 Pro the game runs in rotated mode and the agent already reports the
+    // contact points as 3120x1440, so the client takes care of translating the
+    // points if needed (i.e if the screen size from minicap app is different than
+    // the contact points reported by minitouch). It always sends the coordinates in the
+    // right values for the reported contact points resolution.
+    // No need to translate anything here (at least not for this phone).
+    // Actually the right thing to do is that minitouch agent doesn't report the screen
+    // size but take the contact points resolution from the InputManager it then uses
+    // to inject the outside events.
     private float[] calculateCoordsForScreen(PointerEvent p){
-        float[] result = new float[2];
-        int x_translate=0, y_translate=0;
-        int rotation = windowManager.getRotation();
-        if (rotation == 1){
-            y_translate = width;
-        } else if (rotation == 3){
-            x_translate = height;
-        }
-        double rad = Math.toRadians(rotation*-90);
-        result[0] = (float)(p.lastX * Math.cos(rad) - p.lastY * Math.sin(rad))+x_translate;
-        result[1] = (float)(p.lastX * Math.sin(rad) + p.lastY * Math.cos(rad))+y_translate;
+        float[] result = { p.lastX, p.lastY };
+//        float[] result = new float[2];
+//        int x_translate=0, y_translate=0;
+//
+//        int rotation = windowManager.getRotation();
+//        if (rotation == 1){
+//            y_translate = width;
+//        } else if (rotation == 3){
+//            x_translate = height;
+//        }
+//        double rad = Math.toRadians(rotation*-90);
+//        result[0] = (float)(p.lastX * Math.cos(rad) - p.lastY * Math.sin(rad))+x_translate;
+//        result[1] = (float)(p.lastX * Math.sin(rad) + p.lastY * Math.cos(rad))+y_translate;
         return result;
     }
 
@@ -149,6 +160,11 @@ public class MinitouchAgent extends Thread {
         float[] screenCoords = calculateCoordsForScreen(p);
         coords.x = screenCoords[0];
         coords.y = screenCoords[1];
+
+        System.out.println(String.format(
+            "p.lastX = %s, p.lastY = %s, coords.x = %s, coords.y = %s",
+            p.lastX, p.lastY, coords.x, coords.y));
+
         return MotionEvent.obtain(p.lastMouseDown, now, p.action, idx+1, pointerProperties,
             pointerCoords, 0, 0, 1f, 1f, 0, 0,
             InputDevice.SOURCE_TOUCHSCREEN, 0);
@@ -314,7 +330,7 @@ public class MinitouchAgent extends Thread {
     @Override
     public void run() {
         try {
-            Log.i(TAG, String.format("creating socket %s", SOCKET));
+            System.out.println(String.format("$s, creating socket %s", TAG, SOCKET));
             serverSocket = new LocalServerSocket(SOCKET);
         } catch (IOException e) {
             e.printStackTrace();
